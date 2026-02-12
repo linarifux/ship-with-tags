@@ -12,9 +12,12 @@ const Dashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getShipments();
-      // Ensure we are setting an array even if the API returns something else
-      setShipments(Array.isArray(data) ? data : []);
+      const response = await getShipments();
+      
+      // ShipStation V2 returns an object with a 'shipments' array
+      const dataArray = response? response : [];
+      setShipments(Array.isArray(dataArray) ? dataArray : []);
+      
     } catch (err) {
       console.error("Fetch error:", err);
       setError(err.message || "Failed to connect to the ShipStation service.");
@@ -27,9 +30,11 @@ const Dashboard = () => {
     loadData();
   }, [loadData]);
 
+  // Updated filter to match snake_case keys from API
   const filteredShipments = shipments.filter(s => 
-    s.shipTo?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.shipmentId?.toString().includes(searchTerm)
+    s.ship_to?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.shipment_id?.toString().includes(searchTerm) ||
+    s.shipment_number?.toString().includes(searchTerm)
   );
 
   return (
@@ -38,7 +43,7 @@ const Dashboard = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Shipments</h1>
-          <p className="text-slate-500 text-sm mt-1">Showing the latest fulfillment data from ShipStation.</p>
+          <p className="text-slate-500 text-sm mt-1">Real-time fulfillment data from ShipStation.</p>
         </div>
         
         <div className="flex items-center gap-2">
@@ -46,8 +51,8 @@ const Dashboard = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
             <input 
               type="text"
-              placeholder="Search by name or ID..."
-              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all w-full sm:w-64 text-sm"
+              placeholder="Search name or ID..."
+              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all w-full sm:w-64 text-sm shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -55,8 +60,7 @@ const Dashboard = () => {
           <button 
             onClick={loadData}
             disabled={loading}
-            className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-all disabled:opacity-50 shadow-sm active:scale-95"
-            title="Refresh Data"
+            className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-600 transition-all disabled:opacity-50 shadow-sm active:scale-95"
           >
             <RefreshCw size={20} className={loading ? 'animate-spin text-blue-500' : ''} />
           </button>
@@ -83,7 +87,7 @@ const Dashboard = () => {
           color="bg-blue-50" 
         />
         <StatCard 
-          title="Results Found" 
+          title="Filtered Results" 
           value={loading ? "..." : filteredShipments.length} 
           icon={<Search className="text-indigo-600" size={20} />} 
           color="bg-indigo-50" 
@@ -94,7 +98,7 @@ const Dashboard = () => {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all">
         <div className="overflow-x-auto text-sm">
           <table className="w-full text-left">
-            <thead className="bg-slate-50/50 border-b border-slate-200 text-slate-500 font-medium">
+            <thead className="bg-slate-50/50 border-b border-slate-200 text-slate-500 font-medium uppercase tracking-wider text-[11px]">
               <tr>
                 <th className="px-6 py-4">Shipment ID</th>
                 <th className="px-6 py-4">Recipient</th>
@@ -109,26 +113,28 @@ const Dashboard = () => {
                 <TableSkeleton />
               ) : filteredShipments.length > 0 ? (
                 filteredShipments.map((s) => (
-                  <tr key={s.shipmentId} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4 font-mono font-semibold text-blue-600">#{s.shipmentId}</td>
+                  <tr key={s.shipment_id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4 font-mono font-semibold text-blue-600">
+                      {s.shipment_id}
+                    </td>
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-900">{s.shipTo?.name || 'Unknown'}</div>
-                      <div className="text-xs text-slate-500 uppercase tracking-wider">{s.shipTo?.city}, {s.shipTo?.state}</div>
+                      <div className="font-semibold text-slate-900">{s.ship_to?.name || 'Unknown'}</div>
+                      <div className="text-xs text-slate-500">{s.ship_to?.city}, {s.ship_to?.state}</div>
                     </td>
                     <td className="px-6 py-4 text-slate-600 font-medium">
-                      {s.serviceCode?.replace(/_/g, ' ') || 'Standard Shipping'}
+                      {s.requested_shipment_service || 'Standard Shipping'}
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-widest">
-                        {s.shipmentStatus || 'Shipped'}
+                        {s.shipment_status?.replace(/_/g, ' ') || 'Shipped'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-slate-500">
-                      {new Date(s.createDate).toLocaleDateString('en-US', { 
+                      {s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { 
                         month: 'short', 
                         day: 'numeric', 
                         year: 'numeric' 
-                      })}
+                      }) : 'N/A'}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
@@ -143,7 +149,7 @@ const Dashboard = () => {
                     <div className="flex flex-col items-center gap-2 text-slate-400">
                       <Package size={40} strokeWidth={1} />
                       <p className="text-lg font-medium">No shipments found</p>
-                      <p className="text-sm">Try adjusting your search criteria.</p>
+                      <p className="text-sm">Try adjusting your search filters.</p>
                     </div>
                   </td>
                 </tr>
@@ -156,7 +162,6 @@ const Dashboard = () => {
   );
 };
 
-// Helper components for a cleaner file
 const TableSkeleton = () => (
   <>
     {[...Array(5)].map((_, i) => (
@@ -176,10 +181,10 @@ const TableSkeleton = () => (
 );
 
 const StatCard = ({ title, value, icon, color }) => (
-  <div className="bg-white p-5 rounded-2xl border border-slate-200 flex items-center gap-4 hover:shadow-md hover:shadow-slate-200/50 transition-all cursor-default">
+  <div className="bg-white p-5 rounded-2xl border border-slate-200 flex items-center gap-4 hover:shadow-sm transition-all">
     <div className={`p-3 rounded-xl ${color} shrink-0`}>{icon}</div>
     <div className="min-w-0">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{title}</p>
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">{title}</p>
       <p className="text-2xl font-bold text-slate-900 truncate">{value}</p>
     </div>
   </div>
