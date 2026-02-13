@@ -10,20 +10,36 @@ const api = axios.create({
 });
 
 /**
- * Fetches shipments with optional filters and pagination.
+ * Fetches unfulfilled orders (Awaiting Shipment).
+ * Use this to access the 1,000+ orders seen in the dashboard.
+ * @param {Object} params - { page, pageSize, orderStatus }
+ */
+export const getOrders = async (params = {}) => {
+  try {
+    // We explicitly map 'pending' to 'awaiting_shipment' to match ShipStation enums
+    const response = await api.get('/orders', { 
+      params: {
+        ...params,
+        orderStatus: params.orderStatus || 'awaiting_shipment'
+      } 
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Frontend Orders API Error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+/**
+ * Fetches fulfilled shipments (Labels already created).
  * @param {Object} params - { page, pageSize, shipmentStatus }
  */
 export const getShipments = async (params = {}) => {
   try {
-    // Axios handles converting the params object into a query string:
-    // e.g., /shipments?page=1&pageSize=20&shipmentStatus=shipped
     const response = await api.get('/shipments', { params });
-    
-    // We return the full data object so the frontend can access 
-    // the 'shipments' array as well as pagination totals.
     return response.data;
   } catch (error) {
-    console.error('Frontend API Error:', error.response?.data || error.message);
+    console.error('Frontend Shipments API Error:', error.response?.data || error.message);
     throw error;
   }
 };
