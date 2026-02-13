@@ -17,10 +17,10 @@ const api = axios.create({
 export const getOrders = async (params = {}) => {
   try {
     // We explicitly map 'pending' to 'awaiting_shipment' to match ShipStation enums
-    const response = await api.get('/orders', { 
+    const response = await api.get('/shipments', { 
       params: {
         ...params,
-        orderStatus: params.orderStatus || 'awaiting_shipment'
+        shipmentStatus: params.shipmentStatus || 'pending'
       } 
     });
     return response.data;

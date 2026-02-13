@@ -13,6 +13,6 @@ router.get('/orders', fetchOrders);
  * @route   GET /api/shipments
  * @desc    Get processed shipments (Labels created)
  */
-router.get('/shipments', fetchShipments);
+router.get('/', fetchShipments);
 
 export default router;

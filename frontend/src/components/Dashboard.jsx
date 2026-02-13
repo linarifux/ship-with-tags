@@ -24,7 +24,7 @@ const Dashboard = () => {
       let response;
       if (statusFilter === 'pending') {
         // Fetch your 1,023 Awaiting Shipment orders
-        response = await getOrders({ page, pageSize, orderStatus: 'awaiting_shipment' });
+        response = await getOrders({ page, pageSize, shipment_status: 'pending' });
       } else {
         // Fetch processed items like label_purchased
         response = await getShipments({ page, pageSize, shipmentStatus: statusFilter });
@@ -69,7 +69,7 @@ const Dashboard = () => {
                 value={statusFilter}
                 onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               >
-                <option value="pending">Awaiting Shipment (1,000+)</option>
+                <option value="pending">Awaiting Shipment</option>
                 <option value="label_purchased">Label Purchased</option>
                 <option value="shipped">Shipped</option>
                 <option value="cancelled">Cancelled</option>

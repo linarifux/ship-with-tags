@@ -43,6 +43,8 @@ export const getShipments = async (params = {}) => {
         page: params.page || 1,
         page_size: params.pageSize || 100,
         shipment_status: params.shipmentStatus || undefined,
+        sort_by: 'created_at',
+        sort_dir: 'DESC'
       }
     });
     return response.data;
