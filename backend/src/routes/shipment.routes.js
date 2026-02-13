@@ -5,12 +5,9 @@ const router = express.Router();
 
 /**
  * @route   GET /api/shipments
- * @desc    Get a list of shipments from ShipStation
- * @access  Public (Add auth middleware here later)
+ * @desc    Get a list of shipments from ShipStation with optional status/pagination filters
+ * @access  Public
  */
 router.get('/', fetchShipments);
-
-// Example of future expansion:
-// router.get('/:id', getShipmentById);
 
 export default router;

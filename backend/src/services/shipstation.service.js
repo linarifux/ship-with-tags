@@ -4,20 +4,15 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * ShipStation V2 usually requires Basic Auth (Key:Secret).
- * However, based on your UI screenshot, if you are strictly using a single 
- * 'api-key' header, we configure the client accordingly.
+ * ShipStation V2 Client
+ * Configured with the specific 'api-key' header found in the documentation.
  */
 const client = axios.create({
-  // Ensure your .env has SS_BASE_URL=https://ssapi.shipstation.com
+  // Base URL should include the versioning if not part of the individual request
   baseURL: process.env.SS_BASE_URL || 'https://ssapi.shipstation.com/v2',
   headers: {
-    // Option A: Custom header (based on your screenshot's 'api-key' field)
+    // Custom header specifically for your API key implementation
     'api-key': process.env.SS_API_KEY,
-    
-    // Option B: If they still require the Authorization header format:
-    // 'Authorization': `Basic ${Buffer.from(process.env.SHIPSTATION_API_KEY + ':').toString('base64')}`,
-    
     'Content-Type': 'application/json',
   },
 });
@@ -25,21 +20,26 @@ const client = axios.create({
 export const getShipments = async (params = {}) => {
   try {
     /**
-     * ShipStation V2 endpoints usually start with /shipments.
-     * Common params: page, pageSize, shipmentStatus, orderNumber
+     * Official parameters for /v2/shipments:
+     * shipment_status: pending, processing, label_purchased, cancelled
+     * page: integer
+     * page_size: integer
      */
+
+    
     const response = await client.get('/shipments', { 
       params: {
         page: params.page || 1,
-        pageSize: params.pageSize || 100,
-        ...params 
+        page_size: params.pageSize || 100,
+        shipment_status: params.shipmentStatus || undefined,
+        batch_id: params.batchId || undefined
       }
     });
 
-    // ShipStation returns an object: { shipments: [], total: 0, page: 1, pages: 1 }
+    // ShipStation returns: { "shipments": [...], "total": X, "page": X, "pages": X }
     return response.data;
   } catch (error) {
-    // Log details for debugging, but throw a clean message for the controller
+    // Log raw data for backend debugging
     console.error('SS_SERVICE_ERROR:', error.response?.data || error.message);
     
     const errorMessage = error.response?.data?.message || 'ShipStation API Connection Failed';
