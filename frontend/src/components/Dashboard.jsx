@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getShipments, getOrders } from '../services/api'; 
+import { getShipments } from '../services/api'; 
 import { 
   Package, RefreshCw, Search, ChevronDown, ChevronUp,
   AlertCircle, Filter, List, ChevronLeft, ChevronRight, Box, Clock,
@@ -22,13 +22,10 @@ const Dashboard = () => {
     setError(null);
     try {
       let response;
-      if (statusFilter === 'pending') {
-        // Fetch your 1,023 Awaiting Shipment orders
-        response = await getOrders({ page, pageSize, shipment_status: 'pending' });
-      } else {
+      
         // Fetch processed items like label_purchased
-        response = await getShipments({ page, pageSize, shipmentStatus: statusFilter });
-      }
+        response = await getShipments({ page, pageSize, shipment_status: statusFilter });
+      
 
       // Map either orders or shipments array based on response
       const dataArray = response?.orders || response?.shipments || [];
@@ -55,7 +52,7 @@ const Dashboard = () => {
       {/* Header & Controls */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">ShipFlow Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Dashboard</h1>
           <p className="text-slate-500 text-sm mt-1">Manage unfulfilled orders and processed shipments.</p>
         </div>
 
@@ -70,8 +67,8 @@ const Dashboard = () => {
                 onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               >
                 <option value="pending">Awaiting Shipment</option>
+                <option value="processing">Processing</option>
                 <option value="label_purchased">Label Purchased</option>
-                <option value="shipped">Shipped</option>
                 <option value="cancelled">Cancelled</option>
               </select>
             </div>
