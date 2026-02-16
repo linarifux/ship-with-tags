@@ -31,3 +31,27 @@ export const getShipments = async (params = {}) => {
     throw new Error(error.response?.data?.message || 'ShipStation Shipments API Failed');
   }
 };
+
+
+/**
+ * Fetches all products from ShipStation
+ * Supports filtering by active status, sku, and name
+ */
+export const getProducts = async (params = {}) => {
+  try {
+    const response = await client.get('/products', {
+      params: {
+        page: params.page || 1,
+        page_size: params.page_size || 100,
+        active: params.active || undefined,
+        sku: params.sku || undefined,
+        name: params.name || undefined,
+      }
+    });
+    // ShipStation returns: { "products": [...], "total": X, "page": X, "pages": X }
+    return response.data;
+  } catch (error) {
+    console.error('SS_PRODUCT_ERROR:', error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || 'ShipStation Products API Failed');
+  }
+};

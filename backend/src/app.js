@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 
 // Import Routes
 import shipmentRoutes from './routes/shipment.routes.js';
+import productRoutes from './routes/product.routes.js';
 // Import Middleware
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -20,6 +21,8 @@ app.use(express.json());
 
 // Main Route Entry Point
 app.use('/api/shipments', shipmentRoutes);
+
+app.use('/api/products', productRoutes);
 
 // Health check for the dashboard
 app.get('/health', (req, res) => res.status(200).send('API is healthy'));
