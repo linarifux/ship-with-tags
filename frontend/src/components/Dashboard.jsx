@@ -33,7 +33,7 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   
   const [statusFilter, setStatusFilter] = useState('pending'); 
-  const [pageSize, setPageSize] = useState(20);
+  const [page_size, setPageSize] = useState(20);
   const [page, setPage] = useState(1);
 
   const loadData = useCallback(async () => {
@@ -45,18 +45,12 @@ const Dashboard = () => {
       // We pass sort_by and sort_dir to ensure newest appear at the top
       const commonParams = { 
         page, 
-        pageSize, 
+        page_size, 
         sort_by: statusFilter === 'pending' ? 'order_date' : 'created_at', 
         sort_dir: 'DESC' 
       };
 
-      if (statusFilter === 'pending') {
-        // Fetch your 1,023 Awaiting Shipment orders
-        response = await getOrders({ ...commonParams, orderStatus: 'awaiting_shipment' });
-      } else {
-        // Fetch processed items like label_purchased
-        response = await getShipments({ ...commonParams, shipment_status: statusFilter });
-      }
+      response = await getShipments({ ...commonParams, shipment_status: statusFilter });
 
       const dataArray = response?.orders || response?.shipments || [];
       setItems(Array.isArray(dataArray) ? dataArray : []);
@@ -66,7 +60,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, statusFilter]);
+  }, [page, page_size, statusFilter]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -166,9 +160,14 @@ const Dashboard = () => {
               {loading ? (
                 <TableSkeleton />
               ) : filteredItems.length > 0 ? (
-                filteredItems.map((item) => (
-                  <ItemRow key={item.order_id || item.shipment_id} item={item} />
-                ))
+                filteredItems.map((item) => {
+                  let totalOrderItems = 0;
+                  item.items.map((p) => {
+                    if(p.sku) totalOrderItems++
+                  })
+                  
+                  return <ItemRow key={item.order_id || item.shipment_id} item={item} totalItems={totalOrderItems} />;
+                })
               ) : (
                 <tr>
                   <td colSpan="6" className="px-6 py-20 text-center text-slate-400 font-medium">
@@ -185,7 +184,7 @@ const Dashboard = () => {
              <List size={14} className="text-slate-400" />
              <select 
                 className="text-xs focus:outline-none bg-transparent font-bold text-slate-500 cursor-pointer"
-                value={pageSize}
+                value={page_size}
                 onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
               >
                 <option value={10}>10 per page</option>
@@ -203,7 +202,7 @@ const Dashboard = () => {
             </button>
             <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Page {page}</span>
             <button 
-              disabled={items.length < pageSize || loading}
+              disabled={items.length < page_size || loading}
               onClick={() => setPage(prev => prev + 1)}
               className="p-1 hover:bg-white rounded-md border border-transparent hover:border-slate-200 disabled:opacity-30 transition-all"
             >
@@ -216,7 +215,7 @@ const Dashboard = () => {
   );
 };
 
-const ItemRow = ({ item }) => {
+const ItemRow = ({ item, totalItems }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const status = item.order_status || item.shipment_status;
   const dateValue = item.order_date || item.created_at;
@@ -255,7 +254,7 @@ const ItemRow = ({ item }) => {
         <td className="px-6 py-4 text-right">
           <div className="flex items-center justify-end gap-2 text-slate-400 font-bold">
             <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-               {item.items?.length || 0}
+               {totalItems || 0}
             </span>
             <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
@@ -270,7 +269,9 @@ const ItemRow = ({ item }) => {
               Order Contents
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {item.items?.map((prod, idx) => (
+              {item.items?.map((prod, idx) => {
+                if(prod.sku){
+                  return(
                 <div key={idx} className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:border-blue-200 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center">
@@ -288,7 +289,9 @@ const ItemRow = ({ item }) => {
                     <p className="text-sm font-black text-blue-600">{prod.quantity}</p>
                   </div>
                 </div>
-              ))}
+              )
+                }
+              })}
             </div>
           </td>
         </tr>
