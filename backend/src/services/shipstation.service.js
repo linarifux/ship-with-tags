@@ -55,3 +55,19 @@ export const getProducts = async (params = {}) => {
     throw new Error(error.response?.data?.message || 'ShipStation Products API Failed');
   }
 };
+
+
+/**
+ * Fetches all tags defined in the ShipStation account.
+ * Tags are used for organizing and filtering orders.
+ */
+export const getTags = async () => {
+  try {
+    const response = await client.get('/tags');
+    // ShipStation returns an array of tag objects
+    return response.data; 
+  } catch (error) {
+    console.error('SS_TAGS_ERROR:', error.response?.data || error.message);
+    throw new Error('Failed to fetch tags from ShipStation');
+  }
+};

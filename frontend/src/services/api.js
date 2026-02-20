@@ -1,42 +1,27 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  headers: { 'Content-Type': 'application/json' },
 });
 
 /**
- * Fetches the product catalog from ShipStation.
- * Used for populating product filters in the UI.
- * @param {Object} params - { page, page_size, active, sku, name }
+ * Fetches shipments/orders based on status and pagination
  */
-export const getProducts = async (params = {}) => {
-  try {
-    const response = await api.get('/products', { params });
-    console.log(response);
-    
-    return response.data;
-  } catch (error) {
-    console.error('Frontend Products API Error:', error.response?.data || error.message);
-    throw error;
-  }
-};
+export const getShipments = (params) => 
+  api.get('/shipments', { params }).then(res => res.data);
 
 /**
- * Fetches shipments with optional filters and pagination.
- * shipment_status options: "pending", "processing", "label_purchased", "cancelled"
- * @param {Object} params - { page, page_size, shipment_status, sort_by, sort_dir }
+ * NEW: Fetches all available ShipStation tags
+ * Useful for populating tag-based filters in the dashboard
  */
-export const getShipments = async (params = {}) => {
-  try {
-    const response = await api.get('/shipments', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Frontend Shipments API Error:', error.response?.data || error.message);
-    throw error;
-  }
-};
+export const getTags = () => 
+  api.get('/tags').then(res => res.data);
+
+/**
+ * Optional: Bulk purchase logic (uncomment if your backend route is ready)
+ */
+// export const bulkPurchaseLabels = (orderIds) => 
+//   api.post('/shipments/bulk-label', { orderIds }).then(res => res.data);
+
+export default api;
