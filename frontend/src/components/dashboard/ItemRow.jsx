@@ -6,7 +6,12 @@ const ItemRow = ({ item, timeFormatter, isSelected, onSelect }) => {
   
   const status = item.order_status || item.shipment_status || 'unknown';
   const dateValue = item.order_date || item.created_at;
+  const orderId = item.order_id || item.shipment_id;
   const orderNumber = item.order_number || item.shipment_number;
+
+  const safeRelativeTime = typeof timeFormatter === 'function' 
+    ? timeFormatter(dateValue) 
+    : dateValue;
 
   return (
     <>
@@ -14,7 +19,7 @@ const ItemRow = ({ item, timeFormatter, isSelected, onSelect }) => {
         <td className="px-4 py-4 text-center">
           <input 
             type="checkbox" 
-            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer transition-transform active:scale-90"
             checked={isSelected}
             onChange={onSelect}
           />
@@ -47,15 +52,15 @@ const ItemRow = ({ item, timeFormatter, isSelected, onSelect }) => {
           </span>
         </td>
 
-        {/* Tags Column */}
+        {/* Dynamic Tag Badges */}
         <td className="px-6 py-4">
           <div className="flex flex-wrap gap-1 justify-center max-w-[150px] mx-auto">
             {item.tags && item.tags.length > 0 ? (
               item.tags.map((tag) => (
                 <span 
-                  key={tag.tagId}
+                  key={tag.tagId || tag.name}
                   className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm truncate max-w-[80px]"
-                  style={{ backgroundColor: tag.color || '#6E10B1' }}
+                  style={{ backgroundColor: tag.color || '#94a3b8' }}
                   title={tag.name}
                 >
                   {tag.name}
@@ -69,7 +74,7 @@ const ItemRow = ({ item, timeFormatter, isSelected, onSelect }) => {
 
         <td className="px-6 py-4">
           <div className="text-slate-900 font-bold text-xs">
-            {timeFormatter(dateValue)}
+            {safeRelativeTime}
           </div>
           <div className="text-[10px] text-slate-400 font-medium">
             {new Date(dateValue).toLocaleDateString()}
@@ -86,7 +91,7 @@ const ItemRow = ({ item, timeFormatter, isSelected, onSelect }) => {
         </td>
       </tr>
 
-      {/* Expanded Order Contents remains the same */}
+      {/* Expanded Details */}
       {isExpanded && (
         <tr className="bg-slate-50/40 border-l-4 border-blue-500 animate-in fade-in duration-200">
           <td colSpan="8" className="px-12 py-6 border-b border-slate-200">
@@ -96,7 +101,7 @@ const ItemRow = ({ item, timeFormatter, isSelected, onSelect }) => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {item.items?.map((prod, idx) => (
-                <div key={idx} className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:border-blue-200 transition-colors">
+                <div key={`${orderId}-item-${idx}`} className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:border-blue-200 transition-colors">
                   <div className="flex items-center gap-4 min-w-0">
                     <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center shrink-0">
                       <Package size={20} />

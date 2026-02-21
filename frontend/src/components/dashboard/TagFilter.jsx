@@ -1,24 +1,36 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Tag, ChevronDown, X, Check } from 'lucide-react';
 
-const TagFilter = ({ tags, tagFilter, setTagFilter }) => {
+const TagFilter = ({ tags = [], tagFilter, setTagFilter }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef(null);
 
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setIsOpen(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const filteredTags = tags.filter(t => 
+  // Defensive check: Ensure tags is an array before filtering
+  const safeTags = Array.isArray(tags) ? tags : [];
+
+  const filteredTags = safeTags.filter(t => 
     t.name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const selectedTag = tags.find(t => t.tag_id.toString() === tagFilter.toString());
+  // Per your logic: the UI displays the selected tag's name.
+  // We handle the case where tagFilter might be storing the name directly.
+  const selectedTag = safeTags.find(t => 
+    t.tag_id?.toString() === tagFilter?.toString() || 
+    t.name === tagFilter
+  );
+  
   const selectedName = selectedTag?.name || 'All Tags';
 
   return (
@@ -34,7 +46,11 @@ const TagFilter = ({ tags, tagFilter, setTagFilter }) => {
             <span className="truncate">{selectedName}</span>
           </div>
           {tagFilter ? (
-            <X size={14} className="text-slate-400 hover:text-red-500" onClick={(e) => { e.stopPropagation(); setTagFilter(''); }} />
+            <X 
+              size={14} 
+              className="text-slate-400 hover:text-red-500 cursor-pointer" 
+              onClick={(e) => { e.stopPropagation(); setTagFilter(''); }} 
+            />
           ) : (
             <ChevronDown size={14} className="text-slate-400" />
           )}
@@ -42,13 +58,13 @@ const TagFilter = ({ tags, tagFilter, setTagFilter }) => {
 
         {isOpen && (
           <div className="absolute z-50 mt-2 w-[240px] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-            <div className="p-2 border-b bg-slate-50/50">
+            <div className="p-2 border-b border-slate-100 bg-slate-50/50">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                 <input 
                   autoFocus
                   placeholder="Search tags..."
-                  className="w-full pl-8 pr-3 py-1.5 border rounded-lg text-xs outline-none focus:ring-2 ring-purple-500/20"
+                  className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 ring-purple-500/20 bg-white"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -57,26 +73,39 @@ const TagFilter = ({ tags, tagFilter, setTagFilter }) => {
             <div className="max-h-[250px] overflow-y-auto p-1">
               <button 
                 onClick={() => { setTagFilter(''); setIsOpen(false); }}
-                className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 rounded-md flex justify-between"
+                className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 rounded-md flex justify-between items-center transition-colors"
               >
                 All Tags {!tagFilter && <Check size={12} className="text-purple-500" />}
               </button>
-              {filteredTags.map(t => (
-                <button 
-                  key={t.tag_id}
-                  onClick={() => { setTagFilter(t.tag_id); setIsOpen(false); }}
-                  className="w-full text-left px-3 py-2 hover:bg-purple-50 rounded-md group"
-                >
-                  <div className="flex justify-between items-center">
-                    <p className="text-xs font-bold text-slate-700 truncate group-hover:text-purple-700">{t.name}</p>
-                    {tagFilter.toString() === t.tag_id.toString() && <Check size={12} className="text-purple-500" />}
-                  </div>
-                  <div 
-                    className="w-full h-1 mt-1 rounded-full" 
-                    style={{ backgroundColor: t.color || '#cbd5e1' }} 
-                  />
-                </button>
-              ))}
+              
+              {filteredTags.map(t => {
+                // Determine if this specific tag is the currently active one
+                const isActive = tagFilter === t.name || tagFilter?.toString() === t.tag_id?.toString();
+                
+                return (
+                  <button 
+                    key={t.tag_id || t.name} // Fallback key if id is missing
+                    // Per your logic: Pass the Name back to the parent component
+                    onClick={() => { setTagFilter(t.name); setIsOpen(false); }}
+                    className="w-full text-left px-3 py-2 hover:bg-purple-50 rounded-md group transition-colors"
+                  >
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs font-bold text-slate-700 truncate group-hover:text-purple-700">{t.name}</p>
+                      {isActive && <Check size={12} className="text-purple-500 shrink-0" />}
+                    </div>
+                    <div 
+                      className="w-full h-1 mt-1 rounded-full opacity-80" 
+                      style={{ backgroundColor: t.color || '#cbd5e1' }} 
+                    />
+                  </button>
+                );
+              })}
+              
+              {filteredTags.length === 0 && (
+                <div className="p-4 text-center text-slate-400 text-xs italic">
+                  No tags found.
+                </div>
+              )}
             </div>
           </div>
         )}

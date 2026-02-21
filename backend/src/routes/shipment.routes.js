@@ -1,5 +1,5 @@
 import express from 'express';
-import { fetchShipments } from '../controllers/shipment.controller.js';
+import { fetchShipments, updateOrderTags } from '../controllers/shipment.controller.js';
 
 const router = express.Router();
 
@@ -9,5 +9,8 @@ const router = express.Router();
  * @desc    Get processed shipments (Labels created)
  */
 router.get('/', fetchShipments);
+
+router.post('/tags', updateOrderTags);
+
 
 export default router;
