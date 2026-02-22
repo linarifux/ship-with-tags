@@ -1,26 +1,9 @@
 import * as shipstationService from '../services/shipstation.service.js';
 
-/**
- * @desc    Fetch PROCESSED shipments (Labels purchased)
- * @route   GET /api/shipments
- * @access  Public
- */
 export const fetchShipments = async (req, res, next) => {
   try {
-    const { 
-      page = 1, 
-      page_size = 20, 
-      shipment_status,
-      tag
-    } = req.query;
-
-    const params = {
-      page: parseInt(page, 10),
-      page_size: parseInt(page_size, 10),
-      shipment_status,
-      tag
-    };
-
+    const { page = 1, page_size = 20, shipment_status, tag } = req.query;
+    const params = { page: parseInt(page, 10), page_size: parseInt(page_size, 10), shipment_status, tag };
     const data = await shipstationService.getShipments(params);
     res.json(data);
   } catch (error) {
@@ -29,41 +12,38 @@ export const fetchShipments = async (req, res, next) => {
   }
 };
 
-/**
- * @desc    Updates tags for a batch of shipments.
- * @route   POST /api/shipments/tags
- * @access  Public
- * @body    { shipmentIds: [123, 456], tagName: "VIP", action: 'add' | 'remove' }
- */
 export const updateOrderTags = async (req, res, next) => {
   try {
-    // Accommodate both orderIds/shipmentIds to match frontend seamlessly
     const ids = req.body.shipmentIds || req.body.orderIds;
-    // Expect tagName based on our new ShipStation service rules
     const tagName = req.body.tagName || req.body.tag_name;
     const { action } = req.body;
 
     if (!ids || !Array.isArray(ids) || !tagName || !action) {
-      return res.status(400).json({ 
-        message: "Invalid payload: Requires shipmentIds array, tagName, and action ('add' or 'remove')." 
-      });
+      return res.status(400).json({ message: "Invalid payload: Requires orderIds array, tagName, and action." });
     }
 
     const results = [];
-    
-    // Process sequentially to avoid hitting ShipStation rate limits.
-    // If you have high volume, you can chunk this using Promise.all in batches.
+    let hasError = false;
+    let errorMessage = "Failed to update tags";
+
     for (const id of ids) {
       try {
         if (action === 'add') {
           await shipstationService.addTagToOrder(id, tagName);
-        } else if (action === 'remove') {
+        } else {
           await shipstationService.removeTagFromOrder(id, tagName);
         }
         results.push({ shipmentId: id, status: 'success' });
       } catch (err) {
+        hasError = true;
+        errorMessage = err.message; // Capture ShipStation's exact error
         results.push({ shipmentId: id, status: 'failed', error: err.message });
       }
+    }
+
+    // Force React to trigger the 'catch' block if it fails
+    if (hasError) {
+      return res.status(400).json({ message: errorMessage, results });
     }
 
     res.json({ message: "Tag update process complete", results });

@@ -30,7 +30,7 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('pending');
   const [productFilter, setProductFilter] = useState('');
-  const [tagFilter, setTagFilter] = useState(''); // Stores Tag NAME for the API
+  const [tagFilter, setTagFilter] = useState(''); 
   
   // Pagination
   const [page, setPage] = useState(1);
@@ -64,7 +64,8 @@ const Dashboard = () => {
       const records = data.shipments || data.orders || []; 
       setItems(records);
       setProducts(discoverProductsFromItems(records));
-      setSelectedIds([]); 
+      // Keep selection if refreshing, clear if changing pages/filters
+      if (!isRefresh) setSelectedIds([]); 
     } catch (err) {
       console.error("Fetch Error:", err);
       setError("Failed to load shipment data. Please try again.");
@@ -83,22 +84,24 @@ const Dashboard = () => {
     fetchTags();
   }, [fetchTags]);
 
-  // --- Local Filtering ---
+  // --- Derived State ---
   const filteredItems = useMemo(() => {
     return items.filter(item => {
       const searchLower = searchTerm.toLowerCase();
-      
       const matchesSearch = 
         (item.ship_to?.name || "").toLowerCase().includes(searchLower) || 
         (item.order_number || item.shipment_number || "").toString().includes(searchLower);
-      
       const matchesProduct = !productFilter || item.items?.some(p => 
         p.sku === productFilter || p.name === productFilter
       );
-      
       return matchesSearch && matchesProduct;
     });
   }, [items, searchTerm, productFilter]);
+
+  // NEW: Derive the full order objects for the selected IDs to pass to the Modal
+  const selectedOrders = useMemo(() => {
+    return items.filter(item => selectedIds.includes(item.order_id || item.shipment_id));
+  }, [items, selectedIds]);
 
   // --- Handlers ---
   const handleSelectAll = (e) => {
@@ -114,8 +117,9 @@ const Dashboard = () => {
   };
 
   const handleTagsUpdated = async () => {
+    // When tags are updated via modal, refresh the dashboard silently in the background
     await fetchTags();
-    await loadData();
+    await loadData(true); 
   };
 
   return (
@@ -332,6 +336,7 @@ const Dashboard = () => {
         isOpen={isTagModalOpen}
         onClose={() => setIsTagModalOpen(false)}
         selectedIds={selectedIds}
+        selectedOrders={selectedOrders}
         tags={tags}
         onTagsUpdated={handleTagsUpdated}
       />

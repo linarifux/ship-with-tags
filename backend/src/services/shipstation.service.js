@@ -80,49 +80,35 @@ export const getTags = async () => {
  */
 export const createTag = async (tagData) => {
   try {
-    // Extract name and encode it to safely handle spaces in the URL
     const encodedTagName = encodeURIComponent(tagData.name);
-    // Passing tagData as the body just in case the API accepts colors or other metadata
     const response = await client.post(`/tags/${encodedTagName}`, tagData);
     return response.data;
   } catch (error) {
-    console.error('SS_CREATE_TAG_ERROR:', error.response?.data || error.message);
-    throw new Error('Failed to create new tag in ShipStation');
+    const msg = error.response?.data?.ExceptionMessage || error.response?.data?.message || error.message;
+    throw new Error(msg);
   }
 };
 
-/**
- * Assigns a tag to a specific shipment.
- * POST /v2/shipments/{{shipment_id}}/tags/{{tag_name}}
- * @param {string|number} shipment_id 
- * @param {string} tag_name 
- */
 export const addTagToOrder = async (shipment_id, tag_name) => {
   try {
     const encodedTag = encodeURIComponent(tag_name);
-    // Request body is empty as the parameters are in the URL path
-    const response = await client.post(`/shipments/${shipment_id}/tags/${encodedTag}`);
+    // Added {} as the second parameter to enforce POST rules
+    const response = await client.post(`/shipments/${shipment_id}/tags/${encodedTag}`, {});
     return response.data;
   } catch (error) {
-    console.error(`SS_ADD_TAG_ERROR (Shipment: ${shipment_id}, Tag: ${tag_name}):`, error.response?.data || error.message);
-    throw new Error(`Failed to add tag ${tag_name} to shipment ${shipment_id}`);
+    const msg = error.response?.data?.ExceptionMessage || error.response?.data?.message || error.message;
+    throw new Error(msg);
   }
 };
 
-/**
- * Removes a tag from a specific shipment.
- * DELETE /v2/shipments/{{shipment_id}}/tags/{{tag_name}}
- * @param {string|number} shipment_id 
- * @param {string} tag_name 
- */
 export const removeTagFromOrder = async (shipment_id, tag_name) => {
   try {
     const encodedTag = encodeURIComponent(tag_name);
-    // No data payload required for a standard URL-parameterized DELETE request
-    const response = await client.delete(`/shipments/${shipment_id}/tags/${encodedTag}`);
+    // Added data: {} for DELETE rules
+    const response = await client.delete(`/shipments/${shipment_id}/tags/${encodedTag}`, { data: {} });
     return response.data;
   } catch (error) {
-    console.error(`SS_REMOVE_TAG_ERROR (Shipment: ${shipment_id}, Tag: ${tag_name}):`, error.response?.data || error.message);
-    throw new Error(`Failed to remove tag ${tag_name} from shipment ${shipment_id}`);
+    const msg = error.response?.data?.ExceptionMessage || error.response?.data?.message || error.message;
+    throw new Error(msg);
   }
 };
