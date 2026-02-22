@@ -24,12 +24,12 @@ const TagFilter = ({ tags = [], tagFilter, setTagFilter }) => {
     t.name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Per your logic: the UI displays the selected tag's name.
-  // We handle the case where tagFilter might be storing the name directly.
-  const selectedTag = safeTags.find(t => 
-    t.tag_id?.toString() === tagFilter?.toString() || 
-    t.name === tagFilter
-  );
+  // Safely find the selected tag without triggering undefined matches
+  const selectedTag = safeTags.find(t => {
+    if (!tagFilter) return false;
+    const targetString = tagFilter.toString();
+    return t.name === tagFilter || t.tagId?.toString() === targetString || t.tag_id?.toString() === targetString;
+  });
   
   const selectedName = selectedTag?.name || 'All Tags';
 
@@ -79,13 +79,18 @@ const TagFilter = ({ tags = [], tagFilter, setTagFilter }) => {
               </button>
               
               {filteredTags.map(t => {
-                // Determine if this specific tag is the currently active one
-                const isActive = tagFilter === t.name || tagFilter?.toString() === t.tag_id?.toString();
+                // Bulletproof ID fallback handles 'tagId', 'tag_id', or relies on 'name'
+                const tId = t.tagId || t.tag_id || t.name;
+                
+                // Ensure tagFilter exists before comparing to prevent undefined match bugs
+                const isActive = Boolean(tagFilter) && (
+                  tagFilter === t.name || 
+                  tagFilter.toString() === tId.toString()
+                );
                 
                 return (
                   <button 
-                    key={t.tag_id || t.name} // Fallback key if id is missing
-                    // Per your logic: Pass the Name back to the parent component
+                    key={tId} 
                     onClick={() => { setTagFilter(t.name); setIsOpen(false); }}
                     className="w-full text-left px-3 py-2 hover:bg-purple-50 rounded-md group transition-colors"
                   >

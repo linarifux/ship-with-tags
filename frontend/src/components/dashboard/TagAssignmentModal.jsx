@@ -12,6 +12,8 @@ const TagAssignmentModal = ({ isOpen, onClose, selectedIds, tags, onTagsUpdated 
 
   if (!isOpen) return null;
 
+  const safeTags = Array.isArray(tags) ? tags : [];
+
   const handleCreateTag = async () => {
     if (!newTagName.trim()) return;
     setIsCreating(true);
@@ -21,18 +23,26 @@ const TagAssignmentModal = ({ isOpen, onClose, selectedIds, tags, onTagsUpdated 
       await onTagsUpdated(); 
       setNewTagName('');
     } catch (err) {
-      setError("Failed to create tag.");
+      // UX Update: Reveal the exact server error message
+      const serverMessage = err.response?.data?.message || err.message;
+      setError(`Failed to create tag: ${serverMessage}`);
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleApplyTag = async (action) => {
-    // We need to find the Tag NAME because the backend route requires it
-    const tagToApply = tags.find(t => t.tagId === selectedTagId);
+    // UX Guardrail: If user types a new tag but clicks 'Apply' instead of '+'
+    if (newTagName.trim() && !selectedTagId) {
+      setError("Please click the '+' button to create your new tag first.");
+      return;
+    }
+
+    // Find the tag matching our bulletproof ID
+    const tagToApply = safeTags.find(t => (t.tagId || t.tag_id || t.name) === selectedTagId);
     
     if (!tagToApply) {
-      setError("Please select a tag first.");
+      setError("Please select an existing tag from the list.");
       return;
     }
 
@@ -48,7 +58,9 @@ const TagAssignmentModal = ({ isOpen, onClose, selectedIds, tags, onTagsUpdated 
       await onTagsUpdated(); 
       onClose();
     } catch (err) {
-      setError(`Failed to ${action} tag.`);
+      // UX Update: Reveal the exact server error message
+      const serverMessage = err.response?.data?.message || err.message;
+      setError(`Failed to ${action} tag. Server says: ${serverMessage}`);
     } finally {
       setIsProcessing(false);
     }
@@ -108,22 +120,30 @@ const TagAssignmentModal = ({ isOpen, onClose, selectedIds, tags, onTagsUpdated 
           <div className="space-y-3">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Existing Tag</h3>
             <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-              {tags.map(t => (
-                <button
-                  key={t.tagId}
-                  onClick={() => setSelectedTagId(t.tagId)}
-                  className={`flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
-                    selectedTagId === t.tagId 
-                      ? 'border-purple-500 bg-purple-50 shadow-sm' 
-                      : 'border-slate-200 hover:border-purple-300'
-                  }`}
-                >
-                  <div className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: t.color || '#cbd5e1' }} />
-                  <span className="text-xs font-bold text-slate-700 truncate">{t.name}</span>
-                  {selectedTagId === t.tagId && <Check size={14} className="text-purple-500 ml-auto shrink-0" />}
-                </button>
-              ))}
-              {tags.length === 0 && <div className="col-span-2 text-xs text-slate-500 italic text-center p-4">No tags available.</div>}
+              {safeTags.map(t => {
+                // Bulletproof ID fallback handles 'tagId', 'tag_id', or relies on 'name'
+                const tId = t.tagId || t.tag_id || t.name;
+                
+                // Only matches if selectedTagId actually has a value, preventing undefined matches
+                const isActive = Boolean(selectedTagId) && selectedTagId === tId;
+
+                return (
+                  <button
+                    key={tId}
+                    onClick={() => setSelectedTagId(tId)}
+                    className={`flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
+                      isActive 
+                        ? 'border-purple-500 bg-purple-50 shadow-sm' 
+                        : 'border-slate-200 hover:border-purple-300'
+                    }`}
+                  >
+                    <div className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: t.color || '#cbd5e1' }} />
+                    <span className="text-xs font-bold text-slate-700 truncate">{t.name}</span>
+                    {isActive && <Check size={14} className="text-purple-500 ml-auto shrink-0" />}
+                  </button>
+                )
+              })}
+              {safeTags.length === 0 && <div className="col-span-2 text-xs text-slate-500 italic text-center p-4">No tags available.</div>}
             </div>
           </div>
         </div>
