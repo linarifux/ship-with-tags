@@ -128,7 +128,7 @@ const Dashboard = () => {
       {/* --- Header Section --- */}
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 pb-2 border-b border-slate-200">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">ShipFlow Dashboard</h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard</h1>
           <p className="text-slate-500 font-medium mt-1 flex items-center gap-2">
             Managing <span className="text-blue-600 font-bold px-2 py-0.5 bg-blue-50 rounded-md">{statusFilter.replace('_', ' ')}</span> orders.
           </p>
