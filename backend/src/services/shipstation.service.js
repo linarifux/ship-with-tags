@@ -112,3 +112,20 @@ export const removeTagFromOrder = async (shipment_id, tag_name) => {
     throw new Error(msg);
   }
 };
+
+
+/**
+ * Fetches the raw data from a ShipStation Webhook resource URL
+ * @param {string} resourceUrl - The full URL provided in the webhook payload
+ */
+export const fetchWebhookData = async (resourceUrl) => {
+  try {
+    // Axios handles full URLs automatically, even if a baseURL is set
+    const response = await client.get(resourceUrl);
+    return response.data;
+  } catch (error) {
+    console.error('SS_WEBHOOK_FETCH_ERROR:', error.message);
+    throw new Error('Failed to fetch data from ShipStation Webhook URL');
+  }
+};
+

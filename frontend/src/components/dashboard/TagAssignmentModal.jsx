@@ -12,9 +12,11 @@ const TagAssignmentModal = ({ isOpen, onClose, selectedIds, selectedOrders = [],
   const [searchQuery, setSearchQuery] = useState('');
 
   // --- Derived State: Currently Applied Tags ---
+  // Find all unique tags currently applied to the selected orders
   const currentlyAppliedTags = useMemo(() => {
     const appliedMap = new Map();
     selectedOrders.forEach(order => {
+      // Sometimes ShipStation returns tags, sometimes tagIds depending on the endpoint used to fetch them
       if (order.tags && Array.isArray(order.tags)) {
         order.tags.forEach(t => {
           if (!appliedMap.has(t.name)) {
@@ -43,6 +45,7 @@ const TagAssignmentModal = ({ isOpen, onClose, selectedIds, selectedOrders = [],
       await onTagsUpdated(); 
       setNewTagName('');
     } catch (err) {
+      // Pull exact error text from Express
       const serverMsg = err.response?.data?.message || err.message;
       setError(`Creation Failed: ${serverMsg}`);
     } finally {
@@ -68,9 +71,9 @@ const TagAssignmentModal = ({ isOpen, onClose, selectedIds, selectedOrders = [],
     setError(null);
     
     try {
-      // USING YOUR BULK BACKEND ENDPOINT
+      // Hits your Node.js Backend bulk endpoint
       await apiService.updateOrderTags({
-        shipmentIds: selectedIds, // Passed as an array to your Node backend
+        shipmentIds: selectedIds, // Send the IDs array
         tagName: tagToApply.name, 
         action: action 
       });
@@ -86,12 +89,11 @@ const TagAssignmentModal = ({ isOpen, onClose, selectedIds, selectedOrders = [],
     }
   };
 
-  // Helper to remove a specific tag directly from the "Applied Tags" section
+  // Helper to remove a specific tag directly from the "Applied Tags" visual section
   const handleQuickRemove = async (tagName) => {
     setIsProcessing(true);
     setError(null);
     try {
-      // USING YOUR BULK BACKEND ENDPOINT
       await apiService.updateOrderTags({
         shipmentIds: selectedIds,
         tagName: tagName, 
@@ -99,7 +101,7 @@ const TagAssignmentModal = ({ isOpen, onClose, selectedIds, selectedOrders = [],
       });
       
       await onTagsUpdated(); 
-      // Keep modal open so user can see the tag disappear dynamically
+      // Do not close modal here so user sees the tag disappear dynamically
     } catch (err) {
       const serverMsg = err.response?.data?.message || err.message;
       setError(`Failed to remove tag: ${serverMsg}`);
@@ -247,13 +249,6 @@ const TagAssignmentModal = ({ isOpen, onClose, selectedIds, selectedOrders = [],
 
         {/* Footer Actions */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex gap-3 justify-end shrink-0">
-          <button 
-            onClick={() => handleApplyTag('remove')}
-            disabled={isProcessing || !selectedTagId}
-            className="px-4 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl disabled:opacity-50 transition-colors"
-          >
-            Remove from Orders
-          </button>
           <button 
             onClick={() => handleApplyTag('add')}
             disabled={isProcessing || !selectedTagId}

@@ -98,15 +98,19 @@ const Dashboard = () => {
     });
   }, [items, searchTerm, productFilter]);
 
-  // NEW: Derive the full order objects for the selected IDs to pass to the Modal
+  // Derive the full order objects for the selected IDs to pass to the Modal
+  // Safely handles both camelCase and snake_case IDs from ShipStation
   const selectedOrders = useMemo(() => {
-    return items.filter(item => selectedIds.includes(item.order_id || item.shipment_id));
+    return items.filter(item => {
+      const itemId = item.orderId || item.order_id || item.shipmentId || item.shipment_id;
+      return selectedIds.includes(itemId);
+    });
   }, [items, selectedIds]);
 
   // --- Handlers ---
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedIds(filteredItems.map(i => i.order_id || i.shipment_id));
+      setSelectedIds(filteredItems.map(i => i.orderId || i.order_id || i.shipmentId || i.shipment_id));
     } else {
       setSelectedIds([]);
     }
@@ -251,7 +255,7 @@ const Dashboard = () => {
                 <TableSkeleton />
               ) : filteredItems.length > 0 ? (
                 filteredItems.map(item => {
-                  const id = item.order_id || item.shipment_id;
+                  const id = item.orderId || item.order_id || item.shipmentId || item.shipment_id;
                   return (
                     <ItemRow 
                       key={id} 
