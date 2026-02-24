@@ -30,6 +30,9 @@ app.use('/api/tags', tagRoutes);
 
 // Health check for the dashboard
 app.get('/health', (req, res) => res.status(200).send('API is healthy'));
+app.get('/', (req, res) => {
+  res.send('Welcome to the Shipment Management API');
+})
 
 // Global Error Handler (Must be last)
 app.use(errorHandler);
